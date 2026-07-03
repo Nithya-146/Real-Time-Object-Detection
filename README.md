@@ -1,4 +1,4 @@
-# SpectraML: Real-Time Object Detection HUD
+# SpectraML: Real-Time Object Detection HUD 
 
 SpectraML is a premium, zero-backend, GPU-accelerated real-time object detection dashboard running directly in your web browser. Using **TensorFlow.js** and the **COCO-SSD** model, it runs machine learning inference locally on your graphics card via WebGL, allowing you to access object tracking and coordinates with zero server latency.
 
