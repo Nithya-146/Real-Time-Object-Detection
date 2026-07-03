@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpectraML: Real-Time Object Detection HUD</title>
+  <!-- Google Fonts: Outfit & Space Grotesk -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Core Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo-area">
+        <div class="logo-icon"><i class="fa-solid fa-crosshairs"></i></div>
+        <div class="logo-text">
+          <h1>SpectraML</h1>
+          <span>Real-Time Object Detection HUD</span>
+        </div>
+      </div>
+      <div class="status-panel">
+        <span class="status-label">Model Status:</span>
+        <div id="modelStatus" class="status-badge status-loading">
+          <span class="status-dot"></span>
+          <span class="status-text">INITIALIZING</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="dashboard-grid">
+      <!-- Left Panel: Controls & Metrics -->
+      <section class="control-panel glass-panel">
+        <div class="panel-section">
+          <h2><i class="fa-solid fa-sliders"></i> Control Dashboard</h2>
+          
+          <!-- Device Settings -->
+          <div class="control-group">
+            <label for="cameraSelect">Video Source</label>
+            <div class="select-wrapper">
+              <select id="cameraSelect" disabled>
+                <option value="">Detecting sources...</option>
+              </select>
+              <i class="fa-solid fa-chevron-down select-arrow"></i>
+            </div>
+          </div>
+
+          <!-- Slider Settings -->
+          <div class="control-group">
+            <div class="slider-header">
+              <label for="thresholdSlider">Confidence Threshold</label>
+              <span id="thresholdValue">60%</span>
+            </div>
+            <div class="slider-wrapper">
+              <input type="range" id="thresholdSlider" min="10" max="100" value="60" class="slider-custom">
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="button-group">
+            <button id="toggleCamBtn" class="btn btn-primary" disabled>
+              <i class="fa-solid fa-video-slash"></i> <span>Start Camera</span>
+            </button>
+            <button id="pauseResumeBtn" class="btn btn-secondary" disabled>
+              <i class="fa-solid fa-pause"></i> <span>Pause AI</span>
+            </button>
+          </div>
+        </div>
+
+        <hr class="panel-divider">
+
+        <!-- Performance & Detections Stats -->
+        <div class="panel-section">
+          <h2><i class="fa-solid fa-chart-simple"></i> Telemetry & Stats</h2>
+          
+          <div class="stats-grid">
+            <div class="stat-card">
+              <span class="stat-label">System Performance</span>
+              <div class="stat-value-container">
+                <span id="fpsCounter" class="stat-value text-yellow">0</span>
+                <span class="stat-unit">FPS</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Active Objects</span>
+              <div class="stat-value-container">
+                <span id="detectionCount" class="stat-value text-cyan">0</span>
+                <span class="stat-unit">Targets</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Classes List -->
+          <div class="classes-tracker">
+            <h3>Objects In Sight</h3>
+            <ul id="classList" class="class-list-container">
+              <li class="empty-list-msg">No objects detected. Ready camera stream...</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Panel: Viewport -->
+      <section class="viewport-panel glass-panel">
+        <div class="viewport-header">
+          <div class="viewport-title">
+            <span class="pulse-indicator"></span>
+            LIVE FEED OVERLAY
+          </div>
+          <div class="viewport-resolution" id="feedResolution">0 x 0</div>
+        </div>
+        
+        <div class="viewport-container" id="viewportContainer">
+          <!-- Webcam Stream Element -->
+          <video id="webcam" autoplay playsinline muted></video>
+          
+          <!-- Bounding Boxes Overlay Canvas -->
+          <canvas id="canvasOverlay"></canvas>
+
+          <!-- Glass Loading Screen -->
+          <div id="loadingOverlay" class="viewport-overlay active">
+            <div class="spinner-container">
+              <div class="hud-spinner">
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+                <i class="fa-solid fa-circle-notch fa-spin spinner-icon"></i>
+              </div>
+              <p id="loadingMsg">Loading Neural Network...</p>
+            </div>
+          </div>
+
+          <!-- Error / Permission Block Overlay -->
+          <div id="errorOverlay" class="viewport-overlay">
+            <div class="error-container">
+              <i class="fa-solid fa-triangle-exclamation error-icon"></i>
+              <h3>Camera Access Denied</h3>
+              <p id="errorMsg">Please grant camera permission to begin detection.</p>
+              <button id="retryPermissionBtn" class="btn btn-primary">
+                <i class="fa-solid fa-rotate-right"></i> Retry Permission
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>TensorFlow.js Object Detection HUD • Edge WebGL GPU Accelerated • COCO-SSD MobileNetV2</p>
+    </footer>
+  </div>
+
+  <!-- Load TensorFlow.js library first -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+  <!-- Load the COCO-SSD model library -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+  <!-- Core Application Script -->
+  <script src="app.js"></script>
+</body>
+</html>
